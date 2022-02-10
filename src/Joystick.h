@@ -55,7 +55,7 @@
 
 // Joystick axis
 enum Axis {
-	X,Y,Z,  XROT,YROT,ZROT,  THROTTLE,RUDDER,ACCEL,BRAKE,STEER
+	X,Y,Z,  RX,RY,RZ,  THROTTLE,RUDDER,ACCEL,BRAKE,STEER
 };
 
 
@@ -85,7 +85,6 @@ private:
 protected:
 	int buildAndSet16BitValue(bool includeValue, int16_t value, int16_t valueMinimum, int16_t valueMaximum, int16_t actualMinimum, int16_t actualMaximum, uint8_t dataLocation[]);
 	int buildAndSetAxisValue(Axis axis, uint8_t dataLocation[]);
-	//int buildAndSetSimulationValue(bool includeValue, int16_t value, int16_t valueMinimum, int16_t valueMaximum, uint8_t dataLocation[]);
 
 public:
 
@@ -111,6 +110,11 @@ public:
 
 	// Set Range Functions
 	inline void setAxisRange(Axis axis, int16_t min, int16_t max) {  
+		if(min>max) {
+			int16_t t = max;
+			max = min;
+			min = t;
+		}
 		_axesMin[axis] = min;
 		_axesMax[axis] = max;
 	}

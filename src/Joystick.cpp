@@ -514,29 +514,18 @@ void Joystick_::setHatSwitch(int8_t hatSwitchIndex, int16_t value)
 	if (_autoSendState) sendState();
 }
 
-int Joystick_::buildAndSet16BitValue(bool includeValue, int16_t value, int16_t valueMinimum, int16_t valueMaximum, int16_t actualMinimum, int16_t actualMaximum, uint8_t dataLocation[]) 
+int Joystick_::buildAndSet16BitValue(bool includeValue, int16_t value, int16_t valueMinimum, int16_t valueMaximum, 
+	int16_t actualMinimum, int16_t actualMaximum, uint8_t dataLocation[]) 
 {
 	int16_t convertedValue;
 	uint8_t highByte;
 	uint8_t lowByte;
-	int16_t realMinimum = min(valueMinimum, valueMaximum);
-	int16_t realMaximum = max(valueMinimum, valueMaximum);
 
 	if (includeValue == false) return 0;
 
-	if (value < realMinimum) {
-		value = realMinimum;
-	}
-	if (value > realMaximum) {
-		value = realMaximum;
-	}
+	value = constrain(value, valueMinimum, valueMaximum);
 
-	if (valueMinimum > valueMaximum) {
-		// Values go from a larger number to a smaller number (e.g. 1024 to 0)
-		value = realMaximum - value + realMinimum;
-	}
-
-	convertedValue = map(value, realMinimum, realMaximum, actualMinimum, actualMaximum);
+	convertedValue = map(value, valueMinimum, valueMaximum, actualMinimum, actualMaximum);
 
 	highByte = (uint8_t)(convertedValue >> 8);
 	lowByte = (uint8_t)(convertedValue & 0x00FF);
@@ -550,6 +539,7 @@ int Joystick_::buildAndSet16BitValue(bool includeValue, int16_t value, int16_t v
 int Joystick_::buildAndSetAxisValue(Axis axis, uint8_t dataLocation[]) 
 {
 	size_t idx = static_cast<size_t>(axis);
+	
 	return buildAndSet16BitValue(_axesInclude[idx], 
 		_axes[idx], 
 		_axesMin[idx],
@@ -599,9 +589,9 @@ void Joystick_::sendState()
 	index += buildAndSetAxisValue(Axis::X, &(data[index]));
 	index += buildAndSetAxisValue(Axis::Y, &(data[index]));
 	index += buildAndSetAxisValue(Axis::Z, &(data[index]));
-	index += buildAndSetAxisValue(Axis::XROT, &(data[index]));
-	index += buildAndSetAxisValue(Axis::YROT, &(data[index]));
-	index += buildAndSetAxisValue(Axis::ZROT, &(data[index]));
+	index += buildAndSetAxisValue(Axis::RX, &(data[index]));
+	index += buildAndSetAxisValue(Axis::RY, &(data[index]));
+	index += buildAndSetAxisValue(Axis::RZ, &(data[index]));
 	
 	// Set Simulation Values
 	index += buildAndSetAxisValue(Axis::RUDDER, &(data[index]));
