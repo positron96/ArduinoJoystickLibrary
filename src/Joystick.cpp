@@ -25,21 +25,7 @@
 #define JOYSTICK_REPORT_ID_INDEX 7
 #define JOYSTICK_AXIS_MINIMUM -32767
 #define JOYSTICK_AXIS_MAXIMUM 32767
-#define JOYSTICK_SIMULATOR_MINIMUM -32767
-#define JOYSTICK_SIMULATOR_MAXIMUM 32767
 
-#define JOYSTICK_INCLUDE_X_AXIS  B00000001
-#define JOYSTICK_INCLUDE_Y_AXIS  B00000010
-#define JOYSTICK_INCLUDE_Z_AXIS  B00000100
-#define JOYSTICK_INCLUDE_RX_AXIS B00001000
-#define JOYSTICK_INCLUDE_RY_AXIS B00010000
-#define JOYSTICK_INCLUDE_RZ_AXIS B00100000
-
-#define JOYSTICK_INCLUDE_RUDDER      B00000001
-#define JOYSTICK_INCLUDE_THROTTLE    B00000010
-#define JOYSTICK_INCLUDE_ACCELERATOR B00000100
-#define JOYSTICK_INCLUDE_BRAKE       B00001000
-#define JOYSTICK_INCLUDE_STEERING    B00010000
 
 Joystick_::Joystick_(
 	uint8_t hidReportId,
@@ -64,19 +50,18 @@ Joystick_::Joystick_(
     // Save Joystick Settings
     _buttonCount = buttonCount;
 	_hatSwitchCount = hatSwitchCount;
-	_includeAxisFlags = 0;
-	_includeAxisFlags |= (includeXAxis ? JOYSTICK_INCLUDE_X_AXIS : 0);
-	_includeAxisFlags |= (includeYAxis ? JOYSTICK_INCLUDE_Y_AXIS : 0);
-	_includeAxisFlags |= (includeZAxis ? JOYSTICK_INCLUDE_Z_AXIS : 0);
-	_includeAxisFlags |= (includeRxAxis ? JOYSTICK_INCLUDE_RX_AXIS : 0);
-	_includeAxisFlags |= (includeRyAxis ? JOYSTICK_INCLUDE_RY_AXIS : 0);
-	_includeAxisFlags |= (includeRzAxis ? JOYSTICK_INCLUDE_RZ_AXIS : 0);
-	_includeSimulatorFlags = 0;
-	_includeSimulatorFlags |= (includeRudder ? JOYSTICK_INCLUDE_RUDDER : 0);
-	_includeSimulatorFlags |= (includeThrottle ? JOYSTICK_INCLUDE_THROTTLE : 0);
-	_includeSimulatorFlags |= (includeAccelerator ? JOYSTICK_INCLUDE_ACCELERATOR : 0);
-	_includeSimulatorFlags |= (includeBrake ? JOYSTICK_INCLUDE_BRAKE : 0);
-	_includeSimulatorFlags |= (includeSteering ? JOYSTICK_INCLUDE_STEERING : 0);
+	_axesInclude[0] = includeXAxis;
+	_axesInclude[1] = includeYAxis;
+	_axesInclude[2] = includeZAxis;
+	_axesInclude[3] = includeRxAxis;
+	_axesInclude[4] = includeRyAxis;
+	_axesInclude[5] = includeRzAxis;
+
+	_axesInclude[6] = includeRudder;
+	_axesInclude[7] = includeThrottle;
+	_axesInclude[8] = includeAccelerator;
+	_axesInclude[9] = includeBrake;
+	_axesInclude[10] = includeSteering;
 	
     // Build Joystick HID Report Description
 	
@@ -454,17 +439,12 @@ Joystick_::Joystick_(
 	_hidReportSize += (simulationCount * 2);
 	
 	// Initalize Joystick State
-	_xAxis = 0;
-	_yAxis = 0;
-	_zAxis = 0;
-	_xAxisRotation = 0;
-	_yAxisRotation = 0;
-	_zAxisRotation = 0;
-	_throttle = 0;
-	_rudder = 0;
-	_accelerator = 0;
-	_brake = 0;
-	_steering = 0;
+	for(size_t i=0; i<AXES_COUNT; i++) {
+		_axes[i] = 0;
+		_axesMin[i] = JOYSTICK_DEFAULT_AXIS_MINIMUM;
+		_axesMax[i] = JOYSTICK_DEFAULT_AXIS_MAXIMUM;
+	}
+	
 	for (int index = 0; index < JOYSTICK_HATSWITCH_COUNT_MAXIMUM; index++)
 	{
 		_hatSwitchValues[index] = JOYSTICK_HATSWITCH_RELEASE;
@@ -496,6 +476,7 @@ void Joystick_::setButton(uint8_t button, uint8_t value)
 		pressButton(button);
 	}
 }
+
 void Joystick_::pressButton(uint8_t button)
 {
     if (button >= _buttonCount) return;
@@ -506,6 +487,7 @@ void Joystick_::pressButton(uint8_t button)
 	bitSet(_buttonValues[index], bit);
 	if (_autoSendState) sendState();
 }
+
 void Joystick_::releaseButton(uint8_t button)
 {
     if (button >= _buttonCount) return;
@@ -517,61 +499,10 @@ void Joystick_::releaseButton(uint8_t button)
 	if (_autoSendState) sendState();
 }
 
-void Joystick_::setXAxis(int16_t value)
+// Set Axis Values
+void Joystick_::setAxis(Axis axis, int16_t value) 
 {
-	_xAxis = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setYAxis(int16_t value)
-{
-	_yAxis = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setZAxis(int16_t value)
-{
-	_zAxis = value;
-	if (_autoSendState) sendState();
-}
-
-void Joystick_::setRxAxis(int16_t value)
-{
-	_xAxisRotation = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setRyAxis(int16_t value)
-{
-	_yAxisRotation = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setRzAxis(int16_t value)
-{
-	_zAxisRotation = value;
-	if (_autoSendState) sendState();
-}
-
-void Joystick_::setRudder(int16_t value)
-{
-	_rudder = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setThrottle(int16_t value)
-{
-	_throttle = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setAccelerator(int16_t value)
-{
-	_accelerator = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setBrake(int16_t value)
-{
-	_brake = value;
-	if (_autoSendState) sendState();
-}
-void Joystick_::setSteering(int16_t value)
-{
-	_steering = value;
+	_axes[static_cast<size_t>(axis)] = value;
 	if (_autoSendState) sendState();
 }
 
@@ -616,15 +547,20 @@ int Joystick_::buildAndSet16BitValue(bool includeValue, int16_t value, int16_t v
 	return 2;
 }
 
-int Joystick_::buildAndSetAxisValue(bool includeAxis, int16_t axisValue, int16_t axisMinimum, int16_t axisMaximum, uint8_t dataLocation[]) 
+int Joystick_::buildAndSetAxisValue(Axis axis, uint8_t dataLocation[]) 
 {
-	return buildAndSet16BitValue(includeAxis, axisValue, axisMinimum, axisMaximum, JOYSTICK_AXIS_MINIMUM, JOYSTICK_AXIS_MAXIMUM, dataLocation);
+	size_t idx = static_cast<size_t>(axis);
+	return buildAndSet16BitValue(_axesInclude[idx], 
+		_axes[idx], 
+		_axesMin[idx],
+		_axesMax[idx], 
+		JOYSTICK_AXIS_MINIMUM, JOYSTICK_AXIS_MAXIMUM, dataLocation);
 }
 
-int Joystick_::buildAndSetSimulationValue(bool includeValue, int16_t value, int16_t valueMinimum, int16_t valueMaximum, uint8_t dataLocation[]) 
-{
-	return buildAndSet16BitValue(includeValue, value, valueMinimum, valueMaximum, JOYSTICK_SIMULATOR_MINIMUM, JOYSTICK_SIMULATOR_MAXIMUM, dataLocation);
-}
+// int Joystick_::buildAndSetSimulationValue(bool includeValue, int16_t value, int16_t valueMinimum, int16_t valueMaximum, uint8_t dataLocation[]) 
+// {
+// 	return buildAndSet16BitValue(includeValue, value, valueMinimum, valueMaximum, JOYSTICK_SIMULATOR_MINIMUM, JOYSTICK_SIMULATOR_MAXIMUM, dataLocation);
+// }
 
 void Joystick_::sendState()
 {
@@ -660,19 +596,19 @@ void Joystick_::sendState()
 	} // Hat Switches
 
 	// Set Axis Values
-	index += buildAndSetAxisValue(_includeAxisFlags & JOYSTICK_INCLUDE_X_AXIS, _xAxis, _xAxisMinimum, _xAxisMaximum, &(data[index]));
-	index += buildAndSetAxisValue(_includeAxisFlags & JOYSTICK_INCLUDE_Y_AXIS, _yAxis, _yAxisMinimum, _yAxisMaximum, &(data[index]));
-	index += buildAndSetAxisValue(_includeAxisFlags & JOYSTICK_INCLUDE_Z_AXIS, _zAxis, _zAxisMinimum, _zAxisMaximum, &(data[index]));
-	index += buildAndSetAxisValue(_includeAxisFlags & JOYSTICK_INCLUDE_RX_AXIS, _xAxisRotation, _rxAxisMinimum, _rxAxisMaximum, &(data[index]));
-	index += buildAndSetAxisValue(_includeAxisFlags & JOYSTICK_INCLUDE_RY_AXIS, _yAxisRotation, _ryAxisMinimum, _ryAxisMaximum, &(data[index]));
-	index += buildAndSetAxisValue(_includeAxisFlags & JOYSTICK_INCLUDE_RZ_AXIS, _zAxisRotation, _rzAxisMinimum, _rzAxisMaximum, &(data[index]));
+	index += buildAndSetAxisValue(Axis::X, &(data[index]));
+	index += buildAndSetAxisValue(Axis::Y, &(data[index]));
+	index += buildAndSetAxisValue(Axis::Z, &(data[index]));
+	index += buildAndSetAxisValue(Axis::XROT, &(data[index]));
+	index += buildAndSetAxisValue(Axis::YROT, &(data[index]));
+	index += buildAndSetAxisValue(Axis::ZROT, &(data[index]));
 	
 	// Set Simulation Values
-	index += buildAndSetSimulationValue(_includeSimulatorFlags & JOYSTICK_INCLUDE_RUDDER, _rudder, _rudderMinimum, _rudderMaximum, &(data[index]));
-	index += buildAndSetSimulationValue(_includeSimulatorFlags & JOYSTICK_INCLUDE_THROTTLE, _throttle, _throttleMinimum, _throttleMaximum, &(data[index]));
-	index += buildAndSetSimulationValue(_includeSimulatorFlags & JOYSTICK_INCLUDE_ACCELERATOR, _accelerator, _acceleratorMinimum, _acceleratorMaximum, &(data[index]));
-	index += buildAndSetSimulationValue(_includeSimulatorFlags & JOYSTICK_INCLUDE_BRAKE, _brake, _brakeMinimum, _brakeMaximum, &(data[index]));
-	index += buildAndSetSimulationValue(_includeSimulatorFlags & JOYSTICK_INCLUDE_STEERING, _steering, _steeringMinimum, _steeringMaximum, &(data[index]));
+	index += buildAndSetAxisValue(Axis::RUDDER, &(data[index]));
+	index += buildAndSetAxisValue(Axis::THROTTLE, &(data[index]));
+	index += buildAndSetAxisValue(Axis::ACCEL, &(data[index]));
+	index += buildAndSetAxisValue(Axis::BRAKE, &(data[index]));
+	index += buildAndSetAxisValue(Axis::STEER, &(data[index]));
 
 	DynamicHID().SendReport(_hidReportId, data, _hidReportSize);
 }
